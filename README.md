@@ -1,1 +1,1 @@
-# CO_Project_2023
+Computer organization project: Creating an Assembler for the ISA given in the Test cases. The Final code takes 'input.txt' for input and gives the correct binary code in 'output.txt' when no errors are found. When errors are found it gives the corresponding error in the terminal and incorrect output is generated. The CoFinalProject is the final submission. The code is contributes by: Rohan Basugade (2022416) Ritesh Kumar Parihar (2022407) Nitin(2022337) Tushar(2022544)
