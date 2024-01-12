@@ -1,0 +1,258 @@
+import sys
+list_of_instruction = []
+address_of_instruction = []
+# ls = [
+# "0001000010001000"
+# ,"0001000100001001"
+# ,"0111000000010001"
+# ,"1110100000000110"
+# ,"0000000011010001"
+# ,"0111100000000100"
+# ,"1101000000000000"
+# ]
+memory_dict = {}
+address = "0000000"
+ser_no = 0
+flag =False
+register_dict = {"000":["R0","0000000000000000"],"001":["R1","0000000000000000"],"010":["R2","0000000000000000"],"011":["R3","0000000000000000"],"100":["R4","0000000000000000"],"101":["R5","0000000000000000"],"110":["R6","0000000000000000"],"111":["FLAGS","0000000000000000"]}
+def binary_add(address, val):
+    summ = int(address)
+    a = bin(summ + val)
+    a = str(a[2:])
+    b = a  # decide what to do when this value is more than 7.
+    while (len(b) != 7):
+        b = "0"+b
+    return b
+def make_binary(val):
+    x = bin(val)
+    return x[2:]
+def make_binaryperfect(bin):
+    a = bin
+    while(len(a)!=16):
+        a = "0"+a
+    return a
+
+# with open("inputfile.txt.txt", "r+") as f:
+#     for line in f.readlines():
+
+
+doc = []
+while True:
+    line = sys.stdin.readline().strip()
+    if line == "":
+        break
+    doc.append(line)
+
+
+
+
+for line in doc:
+        line = line.strip()
+        list_of_instruction.append(line)
+        address_of_instruction.append(binary_add(address, ser_no))
+        memory_dict[binary_add(address, ser_no)] = line
+        ser_no +=1
+PC = 0
+number_of_inst  = len(list_of_instruction)
+def execution_instruction(curr_inst):
+    #addition
+    global flag
+    if(curr_inst[:5]=="00000"):
+        sum = int(register_dict[curr_inst[10:13]][1],2)+int(register_dict[curr_inst[13:]][1],2)
+        bin_sum = make_binary(sum)
+        if(len(bin_sum)>16):
+            return "overflow"
+        else:
+            bin_sum = make_binaryperfect(bin_sum)
+            return bin_sum
+    #subtraction
+    if(curr_inst[:5]=="00001"):
+        dif = int(register_dict[curr_inst[10:13]][1],2)-int(register_dict[curr_inst[13:]][1],2)
+        bin_dif = make_binary(dif)
+        if(dif<0):
+            return "overflow"
+        elif(len(bin_dif)>16):
+            return "overflow"
+        else:
+            bin_dif = make_binaryperfect(bin_dif)
+            return bin_dif
+    #multiplication
+    if(curr_inst[:5]=="00110"):
+        mul = int(register_dict[curr_inst[10:13]][1],2)*int(register_dict[curr_inst[13:]][1],2)
+        bin_mul = make_binary(mul)
+        if(len(bin_mul)>16):
+            return "overflow"
+        else:
+            bin_mul = make_binaryperfect(bin_mul)
+            return bin_mul
+    #Xor
+    if(curr_inst[:5]=="01010"):
+        xor = int(register_dict[curr_inst[10:13]][1],2)^int(register_dict[curr_inst[13:]][1],2)
+        bin_xor = make_binary(xor)
+        bin_xor = make_binaryperfect(bin_xor)
+        return bin_xor
+    #and
+    if(curr_inst[:5]=="01100"):
+        andop = int(register_dict[curr_inst[10:13]][1],2)&int(register_dict[curr_inst[13:]][1],2)
+        bin_and = make_binary(andop)
+        bin_and = make_binaryperfect(bin_and)
+        return bin_and
+    #or
+    if(curr_inst[:5]=="01011"):
+        orop = int(register_dict[curr_inst[10:13]][1],2)|int(register_dict[curr_inst[13:]][1],2)
+        bin_or = make_binary(orop)
+        bin_or = make_binaryperfect(bin_or)
+        return bin_or
+    #movimmediate
+    if(curr_inst[:5]=="00010"):
+        imm = curr_inst[9:]
+        return make_binaryperfect(imm)
+    #movcontent_of_reg
+    if(curr_inst[:5]=="00011"):
+        reg = curr_inst[13:]
+        return register_dict[reg][1]
+    #load inst
+    if(curr_inst[:5]=="00100"):
+        mem_add = curr_inst[9:]
+        if mem_add not in memory_dict.keys():
+           memory_dict[mem_add] = "0000000000000000"
+        return memory_dict[mem_add]
+    #store inst
+    if(curr_inst[:5]=="00101"):
+        mem_add = curr_inst[9:]
+        memory_dict[mem_add] = register_dict[curr_inst[6:9]][1]
+        return 0;
+#it may be modified
+    # left shift
+    if(curr_inst[:5]=="01001"):
+        data = register_dict[curr_inst[6:9]][1]
+        newdata = data*(2**int(curr_inst[9:][1],2))
+        bin_ls = make_binary(newdata)
+        return make_binaryperfect(bin_ls)
+    # right shift
+    if(curr_inst[:5]=="01001"):
+        data = register_dict[curr_inst[6:9][1]]
+        newdata = data/(2**int(curr_inst[9:][1],2))
+        bin_rs = make_binary(newdata)
+        return make_binaryperfect(bin_rs)
+    #not statement 
+    if(curr_inst[:5]=="01001"):
+        data = register_dict[curr_inst[13:][1]]
+        invert_data = ""
+        for i in data:
+            if(i=="0"):
+               invert_data = invert_data+"1"
+            if(i=="1"):
+               invert_data = invert_data+"0"
+        return invert_data
+    
+    #cmp statement
+    if(curr_inst[:5]=="01110"):
+        num1 = int(register_dict[curr_inst[10:13]][1],2)
+        num2 = int(register_dict[curr_inst[13:]][1],2)
+        if(num1 == num2):
+            register_dict["111"][1] =register_dict["111"][1][:15]+ "1"
+            flag = True
+            
+        elif(num1 > num2):
+    
+            register_dict["111"][1] =register_dict["111"][1][:14]+ "1"+register_dict["111"][1][15:]
+            flag = True
+                    
+        elif(num1 < num2):
+            register_dict["111"][1] =register_dict["111"][1][:13]+ "1"+register_dict["111"][1][14:]
+            flag =True
+        return 0
+    #div statement
+    if(curr_inst[:5]=="00111"):
+        num = int(register_dict[curr_inst[10:13]][1],2)
+        den = int(register_dict[curr_inst[13:]][1],2)
+        if(den==0):
+            register_dict["000"][1]="0000000000000000"
+            register_dict["001"][1]="0000000000000000"
+            register_dict["111"][1][i] =register_dict["111"][1][:12]+ "1"+register_dict["111"][1][13:]
+            flag = True
+        else:
+            quotient = num//den
+            rem = num%den
+            bin_quo = make_binary((quotient))
+            bin_rem = make_binary((rem))
+            register_dict["000"][1]=make_binaryperfect(bin_quo)
+            register_dict["001"][1]=make_binaryperfect(bin_rem)
+        return 0
+    
+
+
+
+
+
+
+
+while(PC<number_of_inst):
+    #print(flag)
+    
+    curr_inst = list_of_instruction[PC]
+    # for type A
+    if(curr_inst[:5]=="00000" or curr_inst[:5]=="00001" or curr_inst[:5]=="00110" or curr_inst[:5]=="01010" or curr_inst[:5]=="01011" or curr_inst[:5]=="01100"):
+        if(execution_instruction(curr_inst)!="overflow"):
+           register_dict[curr_inst[7:10]][1] = execution_instruction(curr_inst)
+        else:
+            register_dict["111"][1] =register_dict["111"][1][:12]+ "1"+register_dict["111"][1][13:]
+            flag = True
+
+    # for type B
+    if(curr_inst[:5]=="00010"  or curr_inst[:5]=="00100" or curr_inst[:5]=="01000" or curr_inst[:5]=="01001" ):
+        register_dict[curr_inst[6:9]][1] = execution_instruction(curr_inst)  
+    # to handle not and mov  
+    if( curr_inst[:5]=="00011" or curr_inst[:5]=="01101"):
+        register_dict[curr_inst[10:13]][1] = execution_instruction(curr_inst)
+    # to handle store instruction
+    if(curr_inst[:5]=="00101"):
+       aa = execution_instruction(curr_inst)
+    # to handle div
+    if(curr_inst[:5]=="00111"):
+       aa = execution_instruction(curr_inst)
+    #to handle cmp
+    if(curr_inst[:5]=="01110"):
+       aa = execution_instruction(curr_inst)
+
+    PC1 =PC
+    
+#updation of pc
+    if(curr_inst[:5]=="01111"):
+        PC = int(curr_inst[-7:],2)
+    elif(curr_inst[:5]=="11100"):
+        if(register_dict["111"][1][13:14]== "1"):
+           PC = int(curr_inst[-7:],2)
+        else:
+            PC = PC+1
+    elif(curr_inst[:5]=="11101"):
+        if(register_dict["111"][1][14:15]== "1"):
+           PC = int(curr_inst[-7:],2)
+        else:
+            PC = PC+1
+    elif(curr_inst[:5]=="11111"):
+        if(register_dict["111"][1][15:]== "1"):
+           PC = int(curr_inst[-7:],2)
+        else:
+            PC = PC+1
+    else:
+        PC=PC+1
+    if flag==False:
+        register_dict["111"][1]='0000000000000000'
+    else:
+        flag = False
+    print(f'{address_of_instruction[PC1]}        {register_dict["000"][1]} {register_dict["001"][1]} {register_dict["010"][1]} {register_dict["011"][1]} {register_dict["100"][1]} {register_dict["101"][1]} {register_dict["110"][1]} {register_dict["111"][1]}')
+    
+#at last print 128 lines
+i = 0
+for x in memory_dict.keys():
+    i +=1
+    print(memory_dict[x])
+    #print("\n")
+while(i<128):
+    i +=1
+    print("0000000000000000")
+    #print("\n")
+        
+
